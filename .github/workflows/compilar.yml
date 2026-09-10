@@ -1,0 +1,53 @@
+name: Generar APK Android
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Android Command Line Tools
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar Cordova y CLI
+        run: |
+          npm install -g cordova
+
+      - name: Crear proyecto Android nativo
+        run: |
+          cordova create app_android com.muviel.infusion "Infusion"
+          cd app_android
+          # Reemplazar archivos web por tu index.html y manifest
+          rm -rf www/*
+          cp ../index.html www/index.html
+          cp ../manifest.json www/manifest.json
+          cp ../sw.js www/sw.js
+          cordova platform add android --no-telemetry
+
+      - name: Compilar archivo APK en depuracion
+        run: |
+          cd app_android
+          cordova build android --debug --no-telemetry
+
+      - name: Publicar instalador APK para descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: Infusion-Instalador-Android
+          path: app_android/platforms/android/app/build/outputs/apk/debug/*.apk
+
